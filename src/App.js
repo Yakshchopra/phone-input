@@ -1,14 +1,14 @@
-import 'react-phone-number-input/style.css';
-import PhoneInput from 'react-phone-number-input';
-import './App.css';
-import { useState } from 'react';
-import { isValidPhoneNumber } from 'react-phone-number-input';
+import "react-phone-number-input/style.css";
+import PhoneInput from "react-phone-number-input";
+import "./App.css";
+import { useEffect, useState } from "react";
+import { isValidPhoneNumber } from "react-phone-number-input";
 
 import {
   getCountries,
   getCountryCallingCode,
-} from 'react-phone-number-input/input';
-import en from 'react-phone-number-input/locale/en';
+} from "react-phone-number-input/input";
+import en from "react-phone-number-input/locale/en";
 
 const CountrySelect = ({ value, onChange, labels, ...rest }) => (
   <select
@@ -16,7 +16,7 @@ const CountrySelect = ({ value, onChange, labels, ...rest }) => (
     value={value}
     onChange={(event) => onChange(event.target.value || undefined)}
   >
-    <option value=''>{labels['ZZ']}</option>
+    <option value="">{labels["ZZ"]}</option>
     {getCountries().map((country) => (
       <option key={country} value={country}>
         {labels[country]} +{getCountryCallingCode(country)}
@@ -26,7 +26,19 @@ const CountrySelect = ({ value, onChange, labels, ...rest }) => (
 );
 
 function App() {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
+  const [intl, setIntl] = useState(false);
+
+  useEffect(() => {
+    const ele = document.querySelector(".PhoneInput input");
+    ele.addEventListener("keydown", (e) => {
+      if (e.key) {
+        setIntl(false);
+      } else {
+        setIntl(true);
+      }
+    });
+  }, []);
 
   const handleCountryChange = (country) => {
     console.log(country);
@@ -41,24 +53,24 @@ function App() {
     if (value) {
       const isValid = isValidPhoneNumber(value);
       if (!isValid) {
-        const ele = document.querySelector('.PhoneInput input');
-        ele.style.border = '1px solid red';
+        const ele = document.querySelector(".PhoneInput input");
+        ele.style.border = "1px solid red";
       } else {
-        const ele = document.querySelector('.PhoneInput input');
-        ele.style.border = '1px solid var(--gray-g-6, #E2E2E2)';
+        const ele = document.querySelector(".PhoneInput input");
+        ele.style.border = "1px solid var(--gray-g-6, #E2E2E2)";
       }
     }
   };
 
   return (
-    <div className='container'>
+    <div className="container">
       <form>
         <PhoneInput
-          international={false}
-          placeholder='Enter phone number'
+          international={intl}
+          placeholder="Enter phone number"
           value={value}
           onBlur={handleBlur}
-          defaultCountry='IN'
+          defaultCountry="US"
           onCountryChange={handleCountryChange}
           onChange={handleChange}
         />
