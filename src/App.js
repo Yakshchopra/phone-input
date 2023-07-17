@@ -26,13 +26,10 @@ const CountrySelect = ({ value, onChange, labels, ...rest }) => (
 );
 
 function App() {
-  const [value, setValue] = useState();
+  const [value, setValue] = useState('');
 
   const handleCountryChange = (country) => {
-    const ele = document.querySelector('.PhoneInputCountry');
-    console.log(ele.innerHTML);
-
-    // ele.innerHTML += country;
+    console.log(country);
   };
 
   const handleChange = (e) => {
@@ -41,20 +38,23 @@ function App() {
   };
 
   const handleBlur = () => {
-    const isValid = isValidPhoneNumber(value);
-    if (!isValid) {
-      const ele = document.querySelector('.PhoneInput input');
-      ele.style.border = '1px solid red';
-    } else {
-      const ele = document.querySelector('.PhoneInput input');
-      ele.style.border = '1px solid var(--gray-g-6, #E2E2E2)';
+    if (value) {
+      const isValid = isValidPhoneNumber(value);
+      if (!isValid) {
+        const ele = document.querySelector('.PhoneInput input');
+        ele.style.border = '1px solid red';
+      } else {
+        const ele = document.querySelector('.PhoneInput input');
+        ele.style.border = '1px solid var(--gray-g-6, #E2E2E2)';
+      }
     }
   };
 
   return (
     <div className='container'>
-      <form autoComplete='off'>
+      <form>
         <PhoneInput
+          international={false}
           placeholder='Enter phone number'
           value={value}
           onBlur={handleBlur}
