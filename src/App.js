@@ -104,7 +104,7 @@ function App() {
         autoComplete='tel-country-code'
         type='tel-country-code'
         onBlur={() => {
-          setTimeout(() => setShow(false), 100);
+          setTimeout(() => setShow(false), 500);
         }}
         ref={inputRef}
       />

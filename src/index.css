@@ -79,6 +79,7 @@ form{
 .flagItem{
   display: flex;
   /* height: 40px; */
+  width: 100%;
   gap: 6px;
   cursor: pointer;
   white-space: normal!important;
