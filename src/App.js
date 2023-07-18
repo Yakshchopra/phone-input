@@ -1,14 +1,17 @@
 import 'react-phone-number-input/style.css';
-import PhoneInput from 'react-phone-number-input';
+import PhoneInput, { formatPhoneNumberIntl } from 'react-phone-number-input';
 import './App.css';
 import { useState } from 'react';
 import { isValidPhoneNumber } from 'react-phone-number-input';
+import { formatPhoneNumber } from 'react-phone-number-input';
 
 import {
   getCountries,
   getCountryCallingCode,
 } from 'react-phone-number-input/input';
 import en from 'react-phone-number-input/locale/en';
+import parsePhoneNumber, { formatNumber } from 'libphonenumber-js';
+import { AsYouType } from 'libphonenumber-js';
 
 const CountrySelect = ({ value, onChange, labels, ...rest }) => (
   <select
@@ -16,7 +19,6 @@ const CountrySelect = ({ value, onChange, labels, ...rest }) => (
     value={value}
     onChange={(event) => onChange(event.target.value || undefined)}
   >
-    <option value=''>{labels['ZZ']}</option>
     {getCountries().map((country) => (
       <option key={country} value={country}>
         {labels[country]} +{getCountryCallingCode(country)}
@@ -27,19 +29,23 @@ const CountrySelect = ({ value, onChange, labels, ...rest }) => (
 
 function App() {
   const [value, setValue] = useState('');
-
-  const handleCountryChange = (country) => {
-    console.log(country);
-  };
+  const [country, setCountry] = useState('US');
 
   const handleChange = (e) => {
-    console.log(e);
-    setValue(e);
+    if (isValidPhoneNumber(e.target.value)) {
+      const newVal = parsePhoneNumber(e.target.value);
+      setCountry(newVal.country);
+      setValue(newVal.formatNational());
+      return;
+    }
+    const formated = new AsYouType(country).input(e.target.value);
+    setValue(formated);
   };
 
   const handleBlur = () => {
-    if (value) {
-      const isValid = isValidPhoneNumber(value);
+    const newVal = parsePhoneNumber(value, country);
+    if (newVal?.number) {
+      const isValid = isValidPhoneNumber(newVal.number);
       if (!isValid) {
         const ele = document.querySelector('.PhoneInput input');
         ele.style.border = '1px solid red';
@@ -52,15 +58,20 @@ function App() {
 
   return (
     <div className='container'>
-      <form>
-        <PhoneInput
-          international={false}
-          placeholder='Enter phone number'
+      <form className='PhoneInput'>
+        <CountrySelect
+          className='PhoneInputCountry'
+          labels={en}
+          value={country}
+          onChange={setCountry}
+        />
+        <input
           value={value}
-          onBlur={handleBlur}
-          defaultCountry='IN'
-          onCountryChange={handleCountryChange}
+          autoComplete='tel'
+          type='tel'
           onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder='Enter phone number'
         />
       </form>
     </div>
