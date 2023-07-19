@@ -81,7 +81,7 @@ function App() {
       const phoneNumber = `+${val.replace(/\D+/g, '')}`;
       const num = parsePhoneNumber(phoneNumber);
       if (num) {
-        setValue(num.formatNational());
+        setValue(num.nationalNumber);
       } else {
         handleNormalFlow(val);
       }
@@ -93,7 +93,7 @@ function App() {
       const num = parsePhoneNumber(phoneNumber);
       if (num) {
         setCountry(num.country);
-        setValue(num.formatNational());
+        setValue(num.nationalNumber);
       } else {
         handleNormalFlow(val);
       }
