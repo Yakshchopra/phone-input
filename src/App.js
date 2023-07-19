@@ -1,7 +1,6 @@
 import 'react-phone-number-input/style.css';
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
-import { isValidPhoneNumber } from 'react-phone-number-input';
 
 import {
   getCountries,
@@ -10,30 +9,8 @@ import {
 import en from 'react-phone-number-input/locale/en';
 import parsePhoneNumber from 'libphonenumber-js';
 import { AsYouType } from 'libphonenumber-js';
-
-
-export function getOS() {
-  const { userAgent } = window.navigator;
-  const { platform } = window.navigator;
-  const macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'];
-  const windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'];
-  const iosPlatforms = ['iPhone', 'iPad', 'iPod'];
-  let os = null;
-
-  if (macosPlatforms.indexOf(platform) !== -1) {
-    os = 'Mac OS';
-  } else if (iosPlatforms.indexOf(platform) !== -1) {
-    os = 'iOS';
-  } else if (windowsPlatforms.indexOf(platform) !== -1) {
-    os = 'Windows';
-  } else if (/Android/.test(userAgent)) {
-    os = 'Android';
-  } else if (!os && /Linux/.test(platform)) {
-    os = 'Linux';
-  }
-
-  return os;
-}
+import { checkBrowser, getOS } from './utils';
+import formatIncompletePhoneNumber from 'libphonenumber-js';
 
 const CountrySelect = ({ value, onChange, labels, ...rest }) => (
   <div {...rest}>
@@ -53,70 +30,25 @@ function App() {
   const [country, setCountry] = useState('IN');
   const [countryList, setCountryList] = useState([]);
   const [show, setShow] = useState(false);
+  const [isAutocomplete, setAutocomplete] = useState(false);
 
   useEffect(() => {
     const ele = document.querySelector('.PhoneInput input');
     ele.addEventListener('keydown', (e) => {
       if (e.key) {
-        sessionStorage.setItem('atc', 'false');
+        setAutocomplete(false);
       } else {
-        sessionStorage.setItem('atc', 'true');
+        setAutocomplete(true);
       }
     });
-
     setCountryList(getCountries());
   }, []);
 
-  useEffect(() => {
-    if (country && value) {
-      const formated = new AsYouType(country).input(value);
-      setValue(formated);
-    }
-  }, [country]);
-
-  const handleAutoComplete = (val) => {
-    const hasCountryCode = val.includes('+');
-    const os = getOS().toUpperCase();
-    if (hasCountryCode || os !== 'IOS') {
-      const phoneNumber = `+${val.replace(/\D+/g, '')}`;
-      const num = parsePhoneNumber(phoneNumber);
-      if (num) {
-        setValue(num.nationalNumber);
-      } else {
-        handleNormalFlow(val);
-      }
-    } else {
-      const phoneNumber = `+${getCountryCallingCode(country)}${val.replace(
-        /\D+/g,
-        ''
-      )}`;
-      const num = parsePhoneNumber(phoneNumber);
-      if (num) {
-        setCountry(num.country);
-        setValue(num.nationalNumber);
-      } else {
-        handleNormalFlow(val);
-      }
-    }
-  };
-
-  const handleNormalFlow = (val) => {
-    const formated = new AsYouType(country).input(val);
-    formated === value ? setValue(val) : setValue(formated);
-  };
-
-  const handleChange = (e) => {
-    if (sessionStorage.getItem('atc') === 'true') {
-      handleAutoComplete(e.target.value);
-    } else {
-      handleNormalFlow(e.target.value);
-    }
-  };
-
   const handleBlur = () => {
     const newVal = parsePhoneNumber(value, country);
+    console.log(newVal?.number);
     if (newVal?.number) {
-      const isValid = isValidPhoneNumber(newVal.number);
+      const isValid = newVal.isValid();
       if (!isValid) {
         const ele = document.querySelector('.PhoneInput input');
         ele.style.border = '1px solid red';
@@ -124,6 +56,44 @@ function App() {
         const ele = document.querySelector('.PhoneInput input');
         ele.style.border = '1px solid var(--gray-g-6, #E2E2E2)';
       }
+    } else {
+      const ele = document.querySelector('.PhoneInput input');
+      ele.style.border = '1px solid red';
+    }
+  };
+
+  const handleAutocomplete = (value) => {
+    const withCountryCode = `+${getCountryCallingCode(country)}${value.replace(
+      /\D+/g,
+      ''
+    )}`;
+    const withoutCountryCode = `+${value.replace(/\D+/g, '')}`;
+    const parsedNumberWithcc = parsePhoneNumber(withCountryCode);
+    const parsedNumber = parsePhoneNumber(withoutCountryCode);
+    if (parsedNumber?.isValid()) {
+      setCountry(parsedNumber.country);
+      setValue(parsedNumber.formatNational());
+    } else if (parsedNumberWithcc?.isValid()) {
+      setValue(parsedNumberWithcc.formatNational());
+    } else {
+      setValue(value);
+    }
+  };
+
+  const handleChange = (event) => {
+    const value = `${event.target.value.replace(/\D+/g, '')}`;
+    if (isAutocomplete) {
+      if (
+        getOS().toUpperCase() !== 'IOS' &&
+        checkBrowser() !== 'Apple Safari'
+      ) {
+        handleAutocomplete(value);
+      } else {
+        setValue(value);
+      }
+    } else {
+      if (event.target.value === '') event.target.blur();
+      setValue(value);
     }
   };
 
@@ -164,7 +134,6 @@ function App() {
             <div
               onClick={() => {
                 setCountry(country);
-                // setShow(false);
               }}
               className='flagItem active'
             >
