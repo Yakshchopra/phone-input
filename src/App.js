@@ -11,6 +11,30 @@ import en from 'react-phone-number-input/locale/en';
 import parsePhoneNumber from 'libphonenumber-js';
 import { AsYouType } from 'libphonenumber-js';
 
+
+export function getOS() {
+  const { userAgent } = window.navigator;
+  const { platform } = window.navigator;
+  const macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'];
+  const windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'];
+  const iosPlatforms = ['iPhone', 'iPad', 'iPod'];
+  let os = null;
+
+  if (macosPlatforms.indexOf(platform) !== -1) {
+    os = 'Mac OS';
+  } else if (iosPlatforms.indexOf(platform) !== -1) {
+    os = 'iOS';
+  } else if (windowsPlatforms.indexOf(platform) !== -1) {
+    os = 'Windows';
+  } else if (/Android/.test(userAgent)) {
+    os = 'Android';
+  } else if (!os && /Linux/.test(platform)) {
+    os = 'Linux';
+  }
+
+  return os;
+}
+
 const CountrySelect = ({ value, onChange, labels, ...rest }) => (
   <div {...rest}>
     <div>
@@ -50,40 +74,48 @@ function App() {
     }
   }, [country]);
 
-  const handleChange = (e) => {
-    if (sessionStorage.getItem('atc') === 'true') {
-      const phoneval = `+${e.target.value.replace(/\D+/g, '')}`;
-      const phoneValCc = `+${getCountryCallingCode(
-        country
-      )}${e.target.value.replace(/\D+/g, '')}`;
-
-      if (isValidPhoneNumber(phoneval) || isValidPhoneNumber(phoneValCc)) {
-        if (isValidPhoneNumber(phoneval)) {
-          const newVal = parsePhoneNumber(phoneval);
-          setCountry(newVal.country);
-          setValue(newVal.nationalNumber);
-        } else {
-          console.log('there');
-          const newVal = parsePhoneNumber(phoneValCc);
-          setCountry(newVal.country);
-          setValue(newVal.nationalNumber);
-        }
+  const handleAutoComplete = (val) => {
+    const hasCountryCode = val.includes('+');
+    const os = getOS().toUpperCase();
+    if (hasCountryCode || os !== 'IOS') {
+      const phoneNumber = `+${val.replace(/\D+/g, '')}`;
+      const num = parsePhoneNumber(phoneNumber);
+      if (num) {
+        setValue(num.formatNational());
       } else {
-        const formated = new AsYouType(country).input(e.target.value);
-        console.log(formated);
-        formated === value ? setValue(e.target.value) : setValue(formated);
+        handleNormalFlow(val);
       }
     } else {
-      const formated = new AsYouType(country).input(e.target.value);
-      console.log(formated);
-      formated === value ? setValue(e.target.value) : setValue(formated);
+      const phoneNumber = `+${getCountryCallingCode(country)}${val.replace(
+        /\D+/g,
+        ''
+      )}`;
+      const num = parsePhoneNumber(phoneNumber);
+      if (num) {
+        setCountry(num.country);
+        setValue(num.formatNational());
+      } else {
+        handleNormalFlow(val);
+      }
+    }
+  };
+
+  const handleNormalFlow = (val) => {
+    const formated = new AsYouType(country).input(val);
+    formated === value ? setValue(val) : setValue(formated);
+  };
+
+  const handleChange = (e) => {
+    if (sessionStorage.getItem('atc') === 'true') {
+      handleAutoComplete(e.target.value);
+    } else {
+      handleNormalFlow(e.target.value);
     }
   };
 
   const handleBlur = () => {
     const newVal = parsePhoneNumber(value, country);
     if (newVal?.number) {
-      console.log(newVal?.number);
       const isValid = isValidPhoneNumber(newVal.number);
       if (!isValid) {
         const ele = document.querySelector('.PhoneInput input');
@@ -147,22 +179,24 @@ function App() {
             </div>
             {countryList.map((item) => {
               return (
-                <div
-                  onClick={() => {
-                    setCountry(item);
-                    setShow(false);
-                  }}
-                  className='flagItem'
-                >
-                  <img
-                    src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${item}.svg`}
-                    alt={item}
-                  />
-                  <span>{en[item]}</span>
-                  <span className='countryCode'>
-                    +{getCountryCallingCode(item)}
-                  </span>
-                </div>
+                item !== country && (
+                  <div
+                    onClick={() => {
+                      setCountry(item);
+                      setShow(false);
+                    }}
+                    className='flagItem'
+                  >
+                    <img
+                      src={`https://purecatamphetamine.github.io/country-flag-icons/3x2/${item}.svg`}
+                      alt={item}
+                    />
+                    <span>{en[item]}</span>
+                    <span className='countryCode'>
+                      +{getCountryCallingCode(item)}
+                    </span>
+                  </div>
+                )
               );
             })}
           </div>
