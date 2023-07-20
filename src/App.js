@@ -10,7 +10,6 @@ import en from 'react-phone-number-input/locale/en';
 import parsePhoneNumber from 'libphonenumber-js';
 import { AsYouType } from 'libphonenumber-js';
 import { checkBrowser, getOS } from './utils';
-import formatIncompletePhoneNumber from 'libphonenumber-js';
 
 const CountrySelect = ({ value, onChange, labels, ...rest }) => (
   <div {...rest}>
@@ -31,6 +30,7 @@ function App() {
   const [countryList, setCountryList] = useState([]);
   const [show, setShow] = useState(false);
   const [isAutocomplete, setAutocomplete] = useState(false);
+  const [handleChar, setHandleChar] = useState(false);
 
   useEffect(() => {
     const ele = document.querySelector('.PhoneInput input');
@@ -76,28 +76,59 @@ function App() {
     } else if (parsedNumberWithcc?.isValid()) {
       setValue(parsedNumberWithcc.formatNational());
     } else {
-      setValue(value);
+      formatValue(value);
     }
   };
 
+  const isNumber = (character) => {
+    const regex = /^[0-9]$/;
+    return regex.test(character);
+  };
+
+  function stripSpecialCharactersFromEnd(str) {
+    // Use regex to match special characters at the end of the string
+    const regex = /[^\w\s]$/;
+
+    while (regex.test(str.slice(-1))) {
+      str = str.slice(0, -1); // Remove the last character
+    }
+
+    return str;
+  }
+
+  const formatValue = (value) => {
+    if (handleChar) {
+      const editedVal = stripSpecialCharactersFromEnd(value);
+      setValue(editedVal);
+      setHandleChar(false);
+      return;
+    }
+    const formatedNum = new AsYouType(country).input(value);
+    if (!isNumber(formatedNum.charAt(formatedNum.length - 1))) {
+      setHandleChar(true);
+    }
+    setValue(formatedNum);
+  };
+
   const handleChange = (event) => {
-    const value = `${event.target.value.replace(/\D+/g, '')}`;
+    const value1 = `${event.target.value.replace(/\D+/g, '')}`;
     if (isAutocomplete) {
       if (
         getOS().toUpperCase() !== 'IOS' &&
         checkBrowser() !== 'Apple Safari'
       ) {
-        handleAutocomplete(value);
+        handleAutocomplete(value1);
       } else {
-        setValue(value);
+        formatValue(event.target.value);
       }
     } else {
-      if (event.target.value === '') event.target.blur();
-      setValue(value);
+      formatValue(event.target.value);
     }
   };
 
   const inputRef = useRef(null);
+
+  const telRef = useRef(null);
 
   return (
     <div className='container'>
@@ -125,6 +156,7 @@ function App() {
           value={value}
           autoComplete='tel'
           type='tel'
+          ref={telRef}
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder='Enter phone number'
