@@ -1,3 +1,5 @@
+import { AsYouType } from 'libphonenumber-js';
+
 export function checkBrowser() {
   // Check browser and version
   var userAgent = navigator.userAgent;
@@ -62,4 +64,18 @@ export function getOS() {
   }
 
   return os;
+}
+
+export const isNumber = (character) => {
+  const regex = /^[0-9]$/;
+  return regex.test(character);
+};
+
+export function stripSpecialCharactersFromEnd(str) {
+  const regex = /[^\w\s]$/;
+  while (regex.test(str.slice(-1))) {
+    str = str.slice(0, -1);
+  }
+
+  return str;
 }
