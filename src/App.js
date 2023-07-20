@@ -111,6 +111,15 @@ function App() {
   };
 
   const handleChange = (event) => {
+
+    if (event.target.value.includes('+')) {
+      const number = parsePhoneNumber(
+        `+${event.target.value.replace(/\D+/g, '')}`
+      );
+      setCountry(number.country);
+      setValue(number.formatNational());
+      return;
+    } 
     const value1 = `${event.target.value.replace(/\D+/g, '')}`;
     if (isAutocomplete) {
       if (
